@@ -29,6 +29,7 @@ const (
 #    SUBSCRIBE - SUB <subject>                                      #
 #    REQUEST   - REQ <subject> <message>                            #
 #    HELP      - H | HELP (prints this message again)               #
+#    QUIT      - Q | QUIT                                           #
 #####################################################################
 
 `
@@ -142,6 +143,8 @@ func fullClient(opts *options) {
 			request(input)
 		case "H", "HELP":
 			fmt.Print(welcome)
+		case "Q", "QUIT":
+			break
 		default:
 			fmt.Println("Unrecognized command")
 		}
