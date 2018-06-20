@@ -162,7 +162,7 @@ func connectTLS(opts *options) error {
 		srvOpts = append(srvOpts, nats.ClientCert(opts.cert, opts.key))
 	}
 
-	nats.Connect(opts.host, srvOpts...)
+	nc, err = nats.Connect(opts.host, srvOpts...)
 	if err != nil {
 		return err
 	}
