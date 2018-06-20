@@ -10,6 +10,7 @@ import (
 	"os"
 )
 
+// Stores program options
 type options struct {
 	test bool
 	host string
@@ -40,9 +41,11 @@ var nc *nats.Conn
 
 func main() {
 	opts := parseOpts()
+
 	if opts == nil {
 		return
 	}
+
 	if opts.test {
 		testConn(opts)
 		return
@@ -68,7 +71,6 @@ func parseOpts() *options {
 	// If help, print help and exit
 	if *help || *h {
 		flag.Usage()
-		flag.
 		return nil
 	}
 
