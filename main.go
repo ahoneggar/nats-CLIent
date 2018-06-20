@@ -6,6 +6,8 @@ import (
 	"github.com/nats-io/go-nats"
 	"strings"
 	"time"
+	"bufio"
+	"os"
 )
 
 type options struct {
@@ -27,13 +29,14 @@ const (
 #    REQUEST   - REQ <subject> <message>                            #
 #    HELP      - H | HELP (prints this message again)               #
 #####################################################################
+
 `
 	subUsage = "Sub usage: SUB <subject>\n"
 	pubUsage = "Pub usage: PUB <subject> <message>\n"
 	reqUsage = "Req usage: REQ <subject> <message>\n"
 )
 
-var nc nats.Conn
+var nc *nats.Conn
 
 func main() {
 	opts := parseOpts()
@@ -50,7 +53,7 @@ func parseOpts() *options {
 
 	ret.tls = *flag.Bool("tls", false, "Use TLS")
 	ret.test = *flag.Bool("test", false, "Just test connection, prints pass or fail then returns")
-	ret.host = *flag.String("host", "localhost:4222", "address of server to connect to")
+	ret.host = "nats://" + *flag.String("host", "localhost:4222", "address of server to connect to")
 	ret.cert = *flag.String("cert", "cert.pem", "Path to the client certificate to use for TLS connection")
 	ret.key = *flag.String("key", "key.pem", "Path to the client key to use for TLS connection")
 	ret.ca = *flag.String("ca", "ca.pem", "Path to the Certificate Authority to use for TLS connection")
@@ -62,17 +65,19 @@ func testConn(opts *options) {
 	if opts.tls {
 		//testConnWithTLS(opts)
 	}
-	nc, err := nats.Connect(opts.host)
+	var err error
+	nc, err = nats.Connect(opts.host)
 	if err != nil {
-		fmt.Errorf("Connection Failed: %+v", err)
+		fmt.Printf("Connection Failed: %+v", err)
 		return
 	}
 	defer nc.Close()
+
 	if nc.IsConnected() {
 		fmt.Println("Connection Successful")
 		return
 	}
-	fmt.Errorf("Connection Failed: %+v", err)
+	fmt.Printf("Connection Failed: %+v", err)
 	return
 
 	// TODO: TLS connection test
@@ -83,26 +88,31 @@ func fullClient(opts *options) {
 	if opts.tls {
 		//fullClientWithTLS(opts)
 	}
+
+	var err error
+
 	fmt.Printf("Connecting to %s\n", opts.host)
-	nc, err := nats.Connect(opts.host)
+	nc, err = nats.Connect(opts.host)
 	if err != nil {
-		fmt.Errorf("Connection Failed: %+v", err)
+		fmt.Printf("Connection Failed: %+v", err)
 		return
 	}
 	defer nc.Close()
 
 	fmt.Print(welcome)
 	for true {
-		line := ""
-		fmt.Scanln(&line)
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("> ")
+		line, _ := reader.ReadString('\n')
+		line = strings.Trim(line, " \n")
 		input := strings.Split(line, " ")
 		switch strings.ToUpper(input[0]) {
 		case "P", "PUB", "PUBLISH":
-			go publish(input)
+			publish(input)
 		case "S", "SUB", "SUBSCRIBE":
-			go subscribe(input)
+			subscribe(input)
 		case "R", "REQ", "REQUEST":
-			go request(input)
+			request(input)
 		case "H", "HELP":
 			fmt.Print(welcome)
 		default:
@@ -132,6 +142,7 @@ func subscribe(input []string) {
 		fmt.Printf("Error Subscribing: %+v\n", err)
 		return
 	}
+	fmt.Printf("+OK\n")
 }
 
 func request(input []string) {
@@ -148,5 +159,5 @@ func request(input []string) {
 }
 
 func handleIncomingMessage(m *nats.Msg) {
-	fmt.Printf("+MSG %s: %s\n", m.Subject, string(m.Data))
+	fmt.Printf("\n+MSG %s: %s\n>", m.Subject, string(m.Data))
 }
