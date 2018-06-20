@@ -49,23 +49,30 @@ func main() {
 }
 
 func parseOpts() *options {
-	ret := &options{}
+	tls := flag.Bool("tls", false, "Use TLS")
+	test := flag.Bool("test", false, "Just test connection, prints pass or fail then returns")
+	hostPtr := flag.String("host", "localhost:4222", "address of server to connect to")
+	cert := flag.String("cert", "", "Path to the client certificate to use for TLS connection")
+	key := flag.String("key", "", "Path to the client key to use for TLS connection")
+	ca := flag.String("ca", "", "Path to the Certificate Authority to use for TLS connection")
 
-	ret.tls = *flag.Bool("tls", false, "Use TLS")
-	ret.test = *flag.Bool("test", false, "Just test connection, prints pass or fail then returns")
-	ret.host = "nats://" + *flag.String("host", "localhost:4222", "address of server to connect to")
-	ret.cert = *flag.String("cert", "cert.pem", "Path to the client certificate to use for TLS connection")
-	ret.key = *flag.String("key", "key.pem", "Path to the client key to use for TLS connection")
-	ret.ca = *flag.String("ca", "ca.pem", "Path to the Certificate Authority to use for TLS connection")
+	flag.Parse()
 
-	return ret
+	host := ""
+	if *tls {
+		host = "tls://" + *hostPtr
+	} else {
+		host = "nats://" + *hostPtr
+	}
+
+	return &options{tls: *tls, test: *test, host: host, cert: *cert, key: *key, ca: *ca}
 }
 
 func testConn(opts *options) {
-	if opts.tls {
-		//testConnWithTLS(opts)
-	}
 	var err error
+	if opts.tls {
+		testConnWithTLS(opts)
+	}
 	nc, err = nats.Connect(opts.host)
 	if err != nil {
 		fmt.Printf("Connection Failed: %+v", err)
@@ -78,21 +85,32 @@ func testConn(opts *options) {
 		return
 	}
 	fmt.Printf("Connection Failed: %+v", err)
-	return
+}
 
-	// TODO: TLS connection test
+func testConnWithTLS(opts *options) {
+	err := connectTLS(opts)
+	if err != nil {
+		fmt.Printf("Connection Failed: %+v", err)
+	}
+	defer nc.Close()
+
+	if nc.IsConnected() {
+		fmt.Printf("Connection Successful\n")
+		return
+	}
+	fmt.Printf("Connection Failed\n")
+
 }
 
 func fullClient(opts *options) {
-	// TODO: CLI client similar to telnet that parses sub/pub commands
-	if opts.tls {
-		//fullClientWithTLS(opts)
-	}
-
 	var err error
 
 	fmt.Printf("Connecting to %s\n", opts.host)
-	nc, err = nats.Connect(opts.host)
+	if opts.tls {
+		err = connectTLS(opts)
+	} else {
+		nc, err = nats.Connect(opts.host)
+	}
 	if err != nil {
 		fmt.Printf("Connection Failed: %+v", err)
 		return
@@ -119,6 +137,23 @@ func fullClient(opts *options) {
 			fmt.Println("Unrecognized command")
 		}
 	}
+}
+
+func connectTLS(opts *options) error {
+	var err error
+	srvOpts := make([]nats.Option, 0)
+	if opts.ca != "" {
+		srvOpts = append(srvOpts, nats.RootCAs(opts.ca))
+	}
+	if opts.cert != "" {
+		srvOpts = append(srvOpts, nats.ClientCert(opts.cert, opts.key))
+	}
+
+	nats.Connect(opts.host, srvOpts...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func publish(input []string) {
