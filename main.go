@@ -40,6 +40,9 @@ var nc *nats.Conn
 
 func main() {
 	opts := parseOpts()
+	if opts == nil {
+		return
+	}
 	if opts.test {
 		testConn(opts)
 		return
@@ -48,16 +51,28 @@ func main() {
 	fullClient(opts)
 }
 
+// Get command-line args
 func parseOpts() *options {
+	// Set flags
 	tls := flag.Bool("tls", false, "Use TLS")
 	test := flag.Bool("test", false, "Just test connection, prints pass or fail then returns")
 	hostPtr := flag.String("host", "localhost:4222", "address of server to connect to")
 	cert := flag.String("cert", "", "Path to the client certificate to use for TLS connection")
 	key := flag.String("key", "", "Path to the client key to use for TLS connection")
 	ca := flag.String("ca", "", "Path to the Certificate Authority to use for TLS connection")
+	help := flag.Bool("help", false, "Print flag usage")
+	h := flag.Bool("h", false, "Same as -help")
 
 	flag.Parse()
 
+	// If help, print help and exit
+	if *help || *h {
+		flag.Usage()
+		flag.
+		return nil
+	}
+
+	// If TLS, use tls:// instead of nats://
 	host := ""
 	if *tls {
 		host = "tls://" + *hostPtr
@@ -68,12 +83,14 @@ func parseOpts() *options {
 	return &options{tls: *tls, test: *test, host: host, cert: *cert, key: *key, ca: *ca}
 }
 
+// Just test connection, not provide client
 func testConn(opts *options) {
 	var err error
 	if opts.tls {
-		testConnWithTLS(opts)
+		err = connectTLS(opts)
+	} else {
+		nc, err = nats.Connect(opts.host)
 	}
-	nc, err = nats.Connect(opts.host)
 	if err != nil {
 		fmt.Printf("Connection Failed: %+v", err)
 		return
@@ -87,21 +104,7 @@ func testConn(opts *options) {
 	fmt.Printf("Connection Failed: %+v", err)
 }
 
-func testConnWithTLS(opts *options) {
-	err := connectTLS(opts)
-	if err != nil {
-		fmt.Printf("Connection Failed: %+v", err)
-	}
-	defer nc.Close()
-
-	if nc.IsConnected() {
-		fmt.Printf("Connection Successful\n")
-		return
-	}
-	fmt.Printf("Connection Failed\n")
-
-}
-
+// Run the actual CLI client
 func fullClient(opts *options) {
 	var err error
 
@@ -118,12 +121,16 @@ func fullClient(opts *options) {
 	defer nc.Close()
 
 	fmt.Print(welcome)
+
+	// Loop the CLI
 	for true {
-		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("> ")
+		reader := bufio.NewReader(os.Stdin)
 		line, _ := reader.ReadString('\n')
 		line = strings.Trim(line, " \n")
 		input := strings.Split(line, " ")
+
+		// Parse input
 		switch strings.ToUpper(input[0]) {
 		case "P", "PUB", "PUBLISH":
 			publish(input)
@@ -139,6 +146,7 @@ func fullClient(opts *options) {
 	}
 }
 
+// Make necessary TLS connection options then connect
 func connectTLS(opts *options) error {
 	var err error
 	srvOpts := make([]nats.Option, 0)
@@ -156,6 +164,7 @@ func connectTLS(opts *options) error {
 	return nil
 }
 
+// Publish input[2:] to input[1]
 func publish(input []string) {
 	if len(input) < 3 {
 		fmt.Print(pubUsage)
@@ -167,6 +176,7 @@ func publish(input []string) {
 	}
 }
 
+// Subscribe to input[1]
 func subscribe(input []string) {
 	if len(input) < 2 {
 		fmt.Print(subUsage)
@@ -180,6 +190,7 @@ func subscribe(input []string) {
 	fmt.Printf("+OK\n")
 }
 
+// Request input[2:] from input[1]
 func request(input []string) {
 	if len(input) < 3 {
 		fmt.Print(reqUsage)
@@ -193,6 +204,7 @@ func request(input []string) {
 	fmt.Printf("Response: %s", string(msg.Data))
 }
 
+// Print incoming messages
 func handleIncomingMessage(m *nats.Msg) {
 	fmt.Printf("\n+MSG %s: %s\n>", m.Subject, string(m.Data))
 }
