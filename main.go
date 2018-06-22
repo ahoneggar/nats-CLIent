@@ -1,23 +1,23 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/nats-io/go-nats"
+	"os"
 	"strings"
 	"time"
-	"bufio"
-	"os"
 )
 
 // Stores program options
 type options struct {
 	test bool
 	host string
-	tls bool
+	tls  bool
 	cert string
-	key string
-	ca string
+	key  string
+	ca   string
 }
 
 const (
@@ -95,7 +95,7 @@ func testConn(opts *options) {
 		nc, err = nats.Connect(opts.host)
 	}
 	if err != nil {
-		fmt.Printf("Connection Failed: %+v", err)
+		fmt.Printf("Connection Failed: %+v\n", err)
 		return
 	}
 	defer nc.Close()
@@ -118,7 +118,7 @@ func fullClient(opts *options) {
 		nc, err = nats.Connect(opts.host)
 	}
 	if err != nil {
-		fmt.Printf("Connection Failed: %+v", err)
+		fmt.Printf("Connection Failed: %+v\n", err)
 		return
 	}
 	defer nc.Close()
