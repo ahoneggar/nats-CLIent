@@ -121,6 +121,11 @@ func fullClient(opts *options) {
 		fmt.Printf("Connection Failed: %+v", err)
 		return
 	}
+
+	if nc == nil || !nc.IsConnected() {
+		fmt.Printf("Connection Failed: nc == %+v", nc)
+		return
+	}
 	defer nc.Close()
 
 	fmt.Print(welcome)
