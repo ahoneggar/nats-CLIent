@@ -28,8 +28,8 @@ const (
 #    PUBLISH   - PUB <subject> <message>                            #
 #    SUBSCRIBE - SUB <subject>                                      #
 #    REQUEST   - REQ <subject> <message>                            #
-#    HELP      - H | HELP (prints this message again)               #
-#    QUIT      - Q | QUIT                                           #
+#    HELP      - H ME | HELP ME (prints this message again)         #
+#    QUIT      - Q NOW | QUIT NOW                                   #
 #####################################################################
 
 `
