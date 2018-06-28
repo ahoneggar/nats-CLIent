@@ -130,9 +130,11 @@ func fullClient(opts *options) {
 	defer nc.Close()
 
 	fmt.Print(welcome + "Connection Successful\n")
+	stopLoop := 0
 
 	// Loop the CLI
-	for true {
+	// currently, help and quit don't do anything unless entered with an additional message
+	for stopLoop==0 {
 		fmt.Print("> ")
 		reader := bufio.NewReader(os.Stdin)
 		line, _ := reader.ReadString('\n')
@@ -150,7 +152,7 @@ func fullClient(opts *options) {
 		case "H", "HELP":
 			fmt.Print(welcome)
 		case "Q", "QUIT":
-			break
+			stopLoop=1
 		default:
 			fmt.Println("Unrecognized command")
 		}
@@ -212,7 +214,7 @@ func request(input []string) {
 		fmt.Printf("Error Requesting: %+v\n", err)
 		return
 	}
-	fmt.Printf("Response: %s", string(msg.Data))
+	fmt.Printf("Response: %s\n", string(msg.Data))
 }
 
 // Print incoming messages
