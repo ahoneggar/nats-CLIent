@@ -128,7 +128,7 @@ func fullClient(opts *options) {
 	}
 	defer nc.Close()
 
-	fmt.Print(welcome)
+	fmt.Print(welcome + "Connection Successful\n")
 
 	// Loop the CLI
 	for true {
@@ -174,7 +174,7 @@ func connectTLS(opts *options) error {
 	return nil
 }
 
-// Publish input[2:] to input[1]
+// Publish message (input[2:]) to subject (input[1])
 func publish(input []string) {
 	if len(input) < 3 {
 		fmt.Print(pubUsage)
@@ -186,7 +186,7 @@ func publish(input []string) {
 	}
 }
 
-// Subscribe to input[1]
+// Subscribe to subject (input[1])
 func subscribe(input []string) {
 	if len(input) < 2 {
 		fmt.Print(subUsage)
@@ -200,7 +200,7 @@ func subscribe(input []string) {
 	fmt.Printf("+OK\n")
 }
 
-// Request input[2:] from input[1]
+// Request message (input[2:]) from subject (input[1])
 func request(input []string) {
 	if len(input) < 3 {
 		fmt.Print(reqUsage)
