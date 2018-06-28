@@ -86,7 +86,7 @@ func parseOpts() *options {
 	return &options{tls: *tls, test: *test, host: host, cert: *cert, key: *key, ca: *ca}
 }
 
-// Just test connection, not provide client
+// Just test connection and return either successful or failed, no client
 func testConn(opts *options) {
 	var err error
 	if opts.tls {
@@ -95,7 +95,7 @@ func testConn(opts *options) {
 		nc, err = nats.Connect(opts.host)
 	}
 	if err != nil {
-		fmt.Printf("Connection Failed: %+v", err)
+		fmt.Printf("Connection Failed: %+v\n", err)
 		return
 	}
 	defer nc.Close()
@@ -104,13 +104,14 @@ func testConn(opts *options) {
 		fmt.Println("Connection Successful")
 		return
 	}
-	fmt.Printf("Connection Failed: %+v", err)
+	fmt.Printf("Connection Failed: %+v\n", err)
 }
 
 // Run the actual CLI client
 func fullClient(opts *options) {
 	var err error
 
+	// connect via either nats or tls
 	fmt.Printf("Connecting to %s\n", opts.host)
 	if opts.tls {
 		err = connectTLS(opts)
@@ -118,12 +119,12 @@ func fullClient(opts *options) {
 		nc, err = nats.Connect(opts.host)
 	}
 	if err != nil {
-		fmt.Printf("Connection Failed: %+v", err)
+		fmt.Printf("Connection Failed: %+v\n", err)
 		return
 	}
 
 	if nc == nil || !nc.IsConnected() {
-		fmt.Printf("Connection Failed: nc == %+v", nc)
+		fmt.Printf("Connection Failed: nc == %+v\n", nc)
 		return
 	}
 	defer nc.Close()
